@@ -265,7 +265,7 @@ rec = recognizer()
 speaker = tts()
 resp = response()
 
-def callback(recognizer, audio, resp, rec):
+def callback(recognizer, audio, resp):
     with rec.mic as source:
         recognizer.adjust_for_ambient_noise(source,duration=0.5)
     try:
@@ -278,13 +278,11 @@ def callback(recognizer, audio, resp, rec):
         return None
 
 print("__________")
-bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp, rec))
+bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp))
 print(":initialisation_successful:")
 
 if __name__ == "__main__":
     playsound.playsound("coin.mp3")
-    with rec.mic as source:
-        rec.recognizer.adjust_for_ambient_noise(source,duration=0.5)
     while True:
         if resp.wake:
             playsound.playsound("coin.mp3")
