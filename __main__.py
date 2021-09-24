@@ -284,10 +284,8 @@ print(":initialisation_successful:")
 if __name__ == "__main__":
     playsound.playsound("coin.mp3")
     with rec.mic as source:
-        recognizer.adjust_for_ambient_noise(source,duration=0.5)
+        rec.recognizer.adjust_for_ambient_noise(source,duration=0.5)
     while True:
-        with rec.mic as source:
-            recognizer.adjust_for_ambient_noise(source,duration=0.5)
         if resp.wake:
             playsound.playsound("coin.mp3")
             word = rec.recognize_from_mic()
