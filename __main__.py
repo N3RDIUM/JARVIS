@@ -11,6 +11,22 @@ import speech_recognition as sr
 from random import * 
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer
+import nltk
+nltk.download('punkt')
+nltk.download('nps_chat')
+posts = nltk.corpus.nps_chat.xml_posts()[:10000]
+
+
+def dialogue_act_features(post):
+    features = {}
+    for word in nltk.word_tokenize(post):
+        features['contains({})'.format(word.lower())] = True
+    return features
+
+featuresets = [(dialogue_act_features(post.text), post.get('class')) for post in posts]
+size = int(len(featuresets) * 0.1)
+train_set, test_set = featuresets[size:], featuresets[:size]
+classifier = nltk.NaiveBayesClassifier.train(train_set)
 
 chatbot = ChatBot('Pion')
 
@@ -89,8 +105,11 @@ class response():
         self.dictating = False
         self.playing = False
         self.wake = False
+        self.chatterbot_response = ''
+        self.chatterbot_said = False
 
     def respond(self,word):
+        self.chatterbot_said = False
         if "play" in word:
             if word.replace("play","") == "":
                 speaker.speak_gtts("what shall I play?")
@@ -210,9 +229,11 @@ class response():
                 elif word != "":
                     playsound.playsound("coin.mp3")
                     break
-
         else:
             rand = randint(0,1)
+            self.chatterbot_response = chatbot.get_response(word)
+            self.chatterbot_said = True
+            print('chatterbot says: '+str(self.chatterbot_response))
             if rand == 0:
                 try:
                     res = client.query(word)
@@ -225,36 +246,48 @@ class response():
                         raise Exception
                     
                 except:
-                    speaker.speak_gtts(str(chatbot.get_response(word)))
+                    speaker.speak_gtts(str(self.chatterbot_response))
             else:
-                speaker.speak_gtts(str(chatbot.get_response(word)))
-        self.wake = False
+                speaker.speak_gtts(str(self.chatterbot_response))
+
+        if self.chatterbot_said:
+            data = classifier.classify(dialogue_act_features(str(self.chatterbot_response)))
+            print('chatterbot response type: '+str(data))
+            if 'Question' in data:
+                self.wake = True
+                self.chatterbot_said = False
+        else:
+            self.wake = False
+        print('_____')
 
 print("__________")
 rec = recognizer()
 speaker = tts()
 resp = response()
 
-def callback(recognizer, audio, resp):
+def callback(recognizer, audio, resp, rec):
     with rec.mic as source:
         recognizer.adjust_for_ambient_noise(source,duration=0.5)
     try:
         spoken = rec.recognizer.recognize_google(audio,language=str('en-IN'))
-        #print(spoken)
         if "computer" in spoken and not resp.wake:
-            print("<< call >>")
+            print("<< wake >>")
             resp.wake = True
             return spoken
     except:
         return None
 
 print("__________")
-bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp))
+bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp, rec))
 print(":initialisation_successful:")
 
 if __name__ == "__main__":
     playsound.playsound("coin.mp3")
+    with rec.mic as source:
+        recognizer.adjust_for_ambient_noise(source,duration=0.5)
     while True:
+        with rec.mic as source:
+            recognizer.adjust_for_ambient_noise(source,duration=0.5)
         if resp.wake:
             playsound.playsound("coin.mp3")
             word = rec.recognize_from_mic()
