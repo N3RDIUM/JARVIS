@@ -291,11 +291,12 @@ def callback(recognizer, audio, resp):
     except:
         return None
 
-def ADJUST_MICROPHONE(rec,recognizer):
+def ADJUST_MICROPHONE(rec,recognizer,resp):
     while True:
         with rec.mic as source:
-            recognizer.adjust_for_ambient_noise(source,duration=0.05)
-            #print(recognizer.energy_threshold)
+            if not resp.wake:
+                recognizer.adjust_for_ambient_noise(source,duration=0.5)
+                #print(recognizer.energy_threshold)
         if stopped:
             break
 
@@ -303,7 +304,7 @@ print("__________")
 bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp))
 print(":initialisation_successful:")
 
-adj_thread = threading.Thread(target=ADJUST_MICROPHONE,args=(rec,rec.recognizer,),daemon=True)
+adj_thread = threading.Thread(target=ADJUST_MICROPHONE,args=(rec,rec.recognizer,resp),daemon=True)
 adj_thread.start()
 
 if __name__ == "__main__":
