@@ -228,15 +228,17 @@ class response():
             while True:
                 word = rec.recognize_from_mic()
                 playsound.playsound("coin.mp3")
-                if self.TIMES_ERRORED == 3:
-                    speaker.speak_gtts("I'm sorry, I can't hear you")
-                    break
                 if word == "":
                     speaker.speak_gtts("please say that again")
                     playsound.playsound("coin.mp3")
                     self.TIMES_ERRORED += 1
                 elif word != "":
+                    self.respond(word)
                     playsound.playsound("coin.mp3")
+                    break
+                if self.TIMES_ERRORED == 2:
+                    speaker.speak_gtts("I'm sorry, I can't hear you")
+                    print('\n')
                     break
         else:
             rand = randint(0,1)
