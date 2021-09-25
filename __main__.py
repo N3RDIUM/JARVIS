@@ -13,6 +13,7 @@ from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer
 import nltk
 import threading
+from conversations import train
 nltk.download('punkt')
 nltk.download('nps_chat')
 posts = nltk.corpus.nps_chat.xml_posts()[:10000]
@@ -33,6 +34,7 @@ chatbot = ChatBot('Pion')
 
 trainer = ChatterBotCorpusTrainer(chatbot)
 
+train(chatbot)
 trainer.train("chatterbot.corpus.english")
 
 print("__________")
