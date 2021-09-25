@@ -12,6 +12,7 @@ from random import *
 from chatterbot import ChatBot
 from chatterbot.trainers import ChatterBotCorpusTrainer
 import nltk
+import threading
 nltk.download('punkt')
 nltk.download('nps_chat')
 posts = nltk.corpus.nps_chat.xml_posts()[:10000]
@@ -43,9 +44,11 @@ m = sr.Microphone()
 with m as source:
     r.adjust_for_ambient_noise(source)
 
+global stopped
 words = []
 aggree = ["OK!","Sure!","Sure thing!","here you go!"]
 ap = ["Sorry! I can't do that.","I dont know the answer to that one!","can you  say that again?","sorry, I don't know what you're talking about."]
+stopped = False
 
 #define a recognizer class to recognize speech
 class recognizer():
@@ -107,8 +110,10 @@ class response():
         self.wake = False
         self.chatterbot_response = ''
         self.chatterbot_said = False
+        self.TIMES_ERRORED = 0
 
     def respond(self,word):
+        self.TIMES_ERRORED = 0
         self.chatterbot_said = False
         if "play" in word:
             if word.replace("play","") == "":
@@ -219,13 +224,17 @@ class response():
 
         elif word == "":
             speaker.speak_gtts("please say that again")
+            self.TIMES_ERRORED += 1
             while True:
                 word = rec.recognize_from_mic()
                 playsound.playsound("coin.mp3")
+                if self.TIMES_ERRORED == 3:
+                    speaker.speak_gtts("I'm sorry, I can't hear you")
+                    break
                 if word == "":
                     speaker.speak_gtts("please say that again")
                     playsound.playsound("coin.mp3")
-
+                    self.TIMES_ERRORED += 1
                 elif word != "":
                     playsound.playsound("coin.mp3")
                     break
@@ -253,11 +262,14 @@ class response():
         if self.chatterbot_said:
             data = classifier.classify(dialogue_act_features(str(self.chatterbot_response)))
             print('chatterbot response type: '+str(data))
-            if 'Question' in data:
+            if 'Question' in data or 'Continuer' in data:
                 self.wake = True
                 self.chatterbot_said = False
+            else:
+                self.wake = False
         else:
             self.wake = False
+
         print('_____')
 
 print("__________")
@@ -266,8 +278,6 @@ speaker = tts()
 resp = response()
 
 def callback(recognizer, audio, resp):
-    with rec.mic as source:
-        recognizer.adjust_for_ambient_noise(source,duration=0.5)
     try:
         spoken = rec.recognizer.recognize_google(audio,language=str('en-IN'))
         if "computer" in spoken and not resp.wake:
@@ -277,16 +287,32 @@ def callback(recognizer, audio, resp):
     except:
         return None
 
+def ADJUST_MICROPHONE(rec,recognizer):
+    while True:
+        with rec.mic as source:
+            recognizer.adjust_for_ambient_noise(source,duration=0.05)
+            #print(recognizer.energy_threshold)
+        if stopped:
+            break
+
 print("__________")
 bg = r.listen_in_background(m,lambda recognizer, audio: callback(recognizer, audio, resp))
 print(":initialisation_successful:")
 
+adj_thread = threading.Thread(target=ADJUST_MICROPHONE,args=(rec,rec.recognizer,),daemon=True)
+adj_thread.start()
+
 if __name__ == "__main__":
     playsound.playsound("coin.mp3")
     while True:
-        if resp.wake:
-            playsound.playsound("coin.mp3")
-            word = rec.recognize_from_mic()
-            #print(word)
-            playsound.playsound("coin.mp3")
-            resp.respond(word)
+        try:
+            if resp.wake:
+                playsound.playsound("coin.mp3")
+                word = rec.recognize_from_mic()
+                #print(word)
+                playsound.playsound("coin.mp3")
+                resp.respond(word)
+        except:
+            break
+    stopped = True
+    adj_thread.join()
