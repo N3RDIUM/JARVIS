@@ -30,7 +30,7 @@ size = int(len(featuresets) * 0.1)
 train_set, test_set = featuresets[size:], featuresets[:size]
 classifier = nltk.NaiveBayesClassifier.train(train_set)
 
-chatbot = ChatBot('Pion')
+chatbot = ChatBot('jarvis')
 
 trainer = ChatterBotCorpusTrainer(chatbot)
 
