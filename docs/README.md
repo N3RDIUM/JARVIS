@@ -4,4 +4,7 @@
 # How to use *
 # Install the Packages *
 Open Your Windows Terminal as Single User to work and type this code to Install all the Packages - <br>
-
+```
+pip install time playsound pyautogui wolframalpha gtts pywhatkit datetime random chatterbot chatterbot.trainers nltk threading conversations
+<!-- There we're on to find a speech_recongition package. It doesn't works yet. -->
+```
