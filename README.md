@@ -28,5 +28,5 @@ JARVIS needs the following packages:
     chatterbot-corpus
     nltk
   
-## Known Issues
+## Known Issue(s)
 1. It doesn't work on devices without python (will be resolved shortly)
