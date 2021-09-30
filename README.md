@@ -5,7 +5,7 @@
 ## Running JARVIS
 To run JARVIS, make sure you have all the packages by running this code in the command prompt:
 
-    python -m pip install pyaudio speechrecogntion torch playsound pyautogui wolframalpha gtts pywhatkit chatterbot chatterbot-corpus nltk
+    python DepInstaller.py
 
 Then, just open a command prompt window inside the repo directory and run:
 
