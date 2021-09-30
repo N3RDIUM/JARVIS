@@ -21,7 +21,6 @@ JARVIS needs the following packages:
     torch
     PlaySound
     PyAutoGUI
-    WolframAlpha
     gTTS
     pywhatkit
     chatterbot
