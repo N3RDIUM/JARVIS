@@ -29,5 +29,4 @@ JARVIS needs the following packages:
     nltk
   
 ## Known Issues
-1. The assistant takes too long to respond (will be resolved shortly)
-2. It doesn't work on devices without python (will be resolved shortly)
+1. It doesn't work on devices without python (will be resolved shortly)
