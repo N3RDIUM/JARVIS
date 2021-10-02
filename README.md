@@ -9,7 +9,7 @@
 To run JARVIS without python:
 
 #### 1. Head over to our installation page: [LINK](https://github.com/somePythonProgrammer/JARVIS/releases/tag/v0.0.2%2Binstaller)
-#### 2. Download the installer
+#### 2. Download the installer.
 #### 3. Run the installer as administrator.
 #### 4. After installation, run the start menu shortcut 'JARVIS' as administrator. (You won't need to run as administrator in future releases)
 
