@@ -13,7 +13,7 @@ class WakeWord():
         self.wake = True
         
     def start_listening(self):
-        porcupine = pvporcupine.create(keywords=["jarvis"])
+        porcupine = pvporcupine.create(keywords=["jarvis"], access_key="K8MvQn5Ad6P4vIFyb9C93NkWIU3Lm2lYH+SW0tXP5eoYtWAaWIz01g==")
 
         pa = pyaudio.PyAudio()
 
