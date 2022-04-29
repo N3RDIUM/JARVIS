@@ -57,3 +57,8 @@ def is_question(question):
         return is_ques    
     else:
         return True
+
+if __name__ == "__main__":
+    while True:
+        query = input("Enter your query: ")
+        print(is_question(query))

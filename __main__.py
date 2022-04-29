@@ -1,4 +1,5 @@
 # imports
+from regex import R
 from __init__ import *
 from speech import recognizer, speaker
 import logging
@@ -79,11 +80,15 @@ responder = Response()
 
 log('APP', 'Initialization Successful. Say JARVIS to talk to JARVIS.')
 
-def doIt():
-    wake.start_listening()
+def doIt(_ = False):
+    if not _:
+        wake.start_listening()
     word = _recognizer.recognize_from_mic()
     log('APP',f'You Said: {word}')
-    response = responder.get_response(word)
+    try:
+        response = responder.get_response(word)
+    except:
+        response = 0
     if not response == 0:
         log('APP', f'Response: {response}')
         _speaker.speak_silero(response)
@@ -97,4 +102,4 @@ def doIt():
             doIt()
 
 while True:
-    doIt()
+    doIt(False)
