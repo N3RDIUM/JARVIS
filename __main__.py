@@ -78,7 +78,8 @@ _speaker.initialize()
 responder = Response()
 
 log('APP', 'Initialization Successful. Say JARVIS to talk to JARVIS.')
-while True:
+
+def doIt():
     wake.start_listening()
     word = _recognizer.recognize_from_mic()
     log('APP',f'You Said: {word}')
@@ -91,3 +92,9 @@ while True:
         response = bot.get_response(word)
         log('APP', f'ChatterBot response: {response}')
         _speaker.speak_silero(response)
+        if is_question(word):
+            log('APP', 'Question detected. Responding with question...')
+            doIt()
+
+while True:
+    doIt()

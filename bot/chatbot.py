@@ -12,7 +12,7 @@ class Bot():
     def __init__(self):
         # Create a new chat bot
         self.bot = ChatBot(
-            'pion',
+            'JARVIS',
             storage_adapter='chatterbot.storage.SQLStorageAdapter',
             logic_adapters=[
                 {
@@ -42,6 +42,7 @@ class Bot():
 
     def get_response(self, query):
         # Return the chat bot's response to a user's query
+        print(query)
         return self.bot.get_response(query)
 
 def test():
