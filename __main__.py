@@ -49,12 +49,12 @@ class Response:
             self.dictating = True
             self._dictation.start()
             return self.aggree[random.randint(0, len(self.aggree)-1)]
-        elif "search" in word:
-            search(word.replace("search", ""))
-            return self.aggree[random.randint(0, len(self.aggree)-1)]+f'Searching {word.replace("search","")}'
-        elif "play" in word:
-            search(word.replace("play", ""))
-            return self.aggree[random.randint(0, len(self.aggree)-1)]+f'Playing {word.replace("play","")}'
+        elif "search" in query:
+            search(query.replace("search", ""))
+            return self.aggree[random.randint(0, len(self.aggree)-1)]+f'Searching {query.replace("search","")}'
+        elif "play" in query:
+            search(query.replace("play", ""))
+            return self.aggree[random.randint(0, len(self.aggree)-1)]+f'Playing {query.replace("play","")}'
         else:
             return 0
 
