@@ -1,0 +1,7 @@
+torch
+diffusers
+transformers
+gpt4all
+openai
+requests
+playsound

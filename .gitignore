@@ -137,3 +137,6 @@ dmypy.json
 
 # executables
 *.exe
+
+# LocalAI folder
+LocalAI/
