@@ -45,6 +45,7 @@ I cannot emphasize the word \"clever\" enough.
 You must be polite and respectful as an assistant at all times.
 Call the user as \"Sir\".
 """
+print(system_prompt)
 
 with model.chat_session():
     while True:
