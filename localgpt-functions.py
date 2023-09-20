@@ -1,3 +1,15 @@
+# NOTE: To use gpt-4 in LocalAI, download a model of your choice from huggingface (preferably airoboros-l2-7b-gpt4-2.0.ggmlv3.q4_0.bin)
+# NOTE: Then place it in the models folder
+# NOTE: Then, add a yaml file with the same name as the model in the models folder and add the following (without the #, of course, and replace the model name with the name of your model):
+
+# name: gpt-4
+# parameters:
+#   model: airoboros-l2-7b-gpt4-2.0.ggmlv3.q4_0.bin
+#   top_p: 80
+#   top_k: 0.9
+#   temperature: 0.1
+# backend: "llama" # Set the `llama` backend
+
 import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("JARVIS")
