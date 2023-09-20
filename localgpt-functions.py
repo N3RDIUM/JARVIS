@@ -1,3 +1,14 @@
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("JARVIS")
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fh = logging.FileHandler("jarvis.log")
+fh.setLevel(logging.INFO)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+logger.info("Initializing modules for Local LLM functions")
 import os
 import openai
 openai.api_base = "http://localhost:8080/v1"
@@ -6,23 +17,27 @@ OPENAI_API_KEY = "sx-xxx"
 os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
 
 import json
-import pyjokes
 import random
+logger.info("Modules initialized.")
 
-def get_current_weather(location, unit="fahrenheit"):
+def confid_and_reason(kwargs):
+    return kwargs["confidence"], kwargs["reason"]
+
+def get_current_weather(location, unit="fahrenheit", **kwargs):
     """Get the current weather in a given location"""
+    confidence, reason = confid_and_reason(kwargs)
+    logger.info(f"[FUNCTION] > get_current_weather called with location={location}, unit={unit}, confidence={confidence}, reason={reason}")
     weather_info = {
         "location": location,
         "temperature": random.randint(50, 100),
         "unit": unit,
         "forecast": random.choice(["sunny", "windy"]),
     }
+    logger.info(f"[FUNCTION] < get_current_weather returned {json.dumps(weather_info)}")
     return json.dumps(weather_info)
-def get_joke():
-    return pyjokes.get_joke()
 
 messages = [
-    {"role": "system", "content": "You are an AI assistant that follows instruction extremely well. Help as much as you can. Give concise and helpful answers. Be polite and respectful at all times. Call the user as \"Sir\"."},
+    {"role": "system", "content": "You are a conversational AI assistant that follows instruction extremely well. Help as much as you can. Give concise and helpful answers. Be polite and respectful at all times. Call the user as \"Sir\". Only call functions when there is a valid reason. Only call the given functions."},
 ]
 
 def run_conversation(query):
@@ -32,7 +47,7 @@ def run_conversation(query):
     functions = [
         {
             "name": "get_current_weather",
-            "description": "Get the current weather in a given location",
+            "description": "Returns the current weather in a given location",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -41,22 +56,31 @@ def run_conversation(query):
                         "description": "The city and state, e.g. San Francisco, CA",
                     },
                     "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                    "confidence": {
+                        "type": "number",
+                        "description": "The confidence level of why you think the user wants to know the weather, from 0 to 1 in decimal form",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "The reason why you think the user wants to know the weather.",
+                    },
                 },
-                "required": ["location"],
+                "required": ["location", "confidence", "reason"],
             },
         }
     ]
-
+    logger.info(f"[GPT] > Starting Chain for response to: {query}")
     # print(messages)
     response = openai.ChatCompletion.create(
-        model="llama-2-7b-chat.ggmlv3.q4_0.bin",
+        model="gpt-4",
         messages=messages,
         functions=functions,
         function_call="auto",
-        temperature=0.7,
+        temperature=0.1,
     )
-    print(response)
+    # print(response)
     response_message = response["choices"][0]["message"]
+    logger.info(f"[GPT] < Response: {response_message}")
     if not response_message.get("function_call"):
         # Step 2: if GPT didn't want to call a function, just return its response
         messages.append({"role": "assistant", "content": response_message["content"]})
@@ -67,7 +91,6 @@ def run_conversation(query):
         # Step 3: call the function
         # Note: the JSON response may not always be valid; be sure to handle errors
         available_functions = {
-            "get_joke": get_joke,
             "get_current_weather": get_current_weather
         }  # only one function in this example, but you can have multiple
         function_name = response_message["function_call"]["name"]
@@ -76,23 +99,31 @@ def run_conversation(query):
         function_response = fuction_to_call(**function_args)
 
         # Step 4: send the info on the function call and function response to GPT
-        messages.append(
+        messages.extend([
             {
                 "role": "function",
                 "name": str(function_name),
                 "content": str(function_response),
+            },
+            {
+                "role": "system",
+                "content": "Great! As you can see, the function returned to you a JSON object containing the data the user wants, but the user does not understand JSON. Now, you may extract the information you need from the JSON object and return it to the user in English. Remember to be clear and concise and respond according to the conversation.",
             }
-        )
+        ])
+        # print(messages[-2])
+        logger.info(f"[GPT] > Chain: Converting {messages[-2]['content']} to English using GPT")
         second_response = openai.ChatCompletion.create(
-            model="llama-2-7b-chat.ggmlv3.q4_0.bin",
+            model="gpt-4",
             messages=messages,
-            temperature=0.7,
+            temperature=0.0,
         )  # get a new response from GPT where it can see the function response
-        print(second_response)
+        logger.info(f"[GPT] < Response: {second_response['choices'][0]['message']['content']}")
+        # print(second_response)
         messages.append({"role": "assistant", "content": second_response["choices"][0]["message"]["content"]})
         return r"{}".format(second_response["choices"][0]["message"]["content"].replace("Assistant: ", ""))
 
 while True:
     query = input("> ")
+    # query = "What is the weather in San Francisco?"
     response = run_conversation(query)
     print(response)

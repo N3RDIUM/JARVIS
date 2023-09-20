@@ -5,3 +5,12 @@ gpt4all
 openai
 requests
 playsound
+deepface
+opencv-python
+langchain
+pydantic
+speechrecognition
+pyaudio
+playsound
+requests
+pyjokes
