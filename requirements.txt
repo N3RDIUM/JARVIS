@@ -14,3 +14,5 @@ pyaudio
 playsound
 requests
 pyjokes
+googlesearch-python
+python-weather
