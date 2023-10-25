@@ -16,3 +16,4 @@ requests
 pyjokes
 googlesearch-python
 python-weather
+super-image

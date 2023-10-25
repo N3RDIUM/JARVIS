@@ -58,7 +58,7 @@ while True:
     except:
         pass
     # Display the frame with recognized faces
-    cv2.imshow("Real-time Face Recognition", frame)
+    cv2.imshow("Real-time Face Recognition :)", frame)
 
     # Exit the loop when 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):

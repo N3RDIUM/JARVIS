@@ -23,8 +23,8 @@ def transcribe(audio):
     return s.recognize_google(audio)
 
 def transcribe_whisper():
-    results = openai.Audio.translate(
-        model="ggml-tiny.bin",
+    results = openai.Audio.transcribe(
+        model="whisper-ggml-small.en.bin",
         file=open(".cache/microphone-results.wav", "rb")
     )
     return results["text"]

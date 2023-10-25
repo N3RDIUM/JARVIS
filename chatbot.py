@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("JARVIS")
 logger.setLevel(logging.INFO)
@@ -18,18 +19,37 @@ from llama_cpp import Llama
 import utils
 import json
 
+# from speech_recognizer import listen_and_save, transcribe_whisper
+from speak import speak
+
 logger.info("Initializing LLM")
-llm = Llama(model_path=".cache/airoboros-l2-7B-gpt4-2.0.Q4_0.gguf")
-curr_state = llm.__getstate__()
+quant = "Q5_K_M"
+modelpath = f".cache/airoboros-l2-7B-gpt4-2.0.{quant}.gguf"
+# TODO: Check if the model exists, if not, download it. Don't just raise an exception
+if not os.path.exists(modelpath):
+    raise Exception(f"Please downlad the {modelpath.split('/')[-1]} model and keep it in the .cache folder!")
+llm = Llama(model_path=modelpath, n_threads=4) # TODO: (for first-time users) Download the model from the internet and enter the path here
+
+# TODO: Make different chat histories and use them for different purposes:
+# 1: User interaction
+# 2: Research, weather, data collection
+# 3: Secondary data collection
+# 4: Memory recall and save
+# The history purposes will scale with the number of cores available.
+
+curr_state = llm.__getstate__().copy()
 print(curr_state)
-curr_state["n_ctx"] = 32786
+curr_state["n_ctx"] = 16384
 curr_state["temperature"] = 0.1
+curr_state["top_p"] = 0.1
 llm.__setstate__(curr_state)
+curr_state = llm.__getstate__().copy()
+print(curr_state)
 
 functions = [
     {
         "name": "chat_with_user", # This function is added because the model hallucinates a lot and calls functions randomly
-        "description": "Use this function to add a message to the chat history to tell the user. Do not respond without JSON output. If you dont want to call any other function and just want to speak to the user, just call this function.",
+        "description": "Always use this function to chat with the user instead of returning non-json output.",
         "parameters": [
             {
                 "name": "message",
@@ -51,7 +71,7 @@ functions = [
     },
     {
         "name": "search_google",
-        "description": "Use this function to search Google. This is like your swiss army knife for acquiring real-world information. If your answer involves real-world information, use this function to search for the required information first.",
+        "description": "Use this function to search Google. This is like your swiss army knife for acquiring real-world information. If your answer involves real-world information, use this function to search for the required information first. It can also be used to get word meanings, definitions, facts, answers to questions, etc.",
         "parameters": [
             {
                 "name": "query",
@@ -60,11 +80,24 @@ functions = [
             },
             {
                 "name": "n_results",
-                "description": "The number of results to return. Default is 4, but you can change it to any number you want depending on the use case. If the question you're answering is more broad in nature, you can increase this number. If the question you're answering is more specific in nature, you can decrease this number. Minimum is 1, maximum is 16.",
+                "description": "The number of results to return. Minimum is 2, but you can change it to any number you want depending on the use case. If the question you're answering is more broad in nature, you can increase this number. If the question you're answering is more specific in nature, you can decrease this number. Maximum is 16.",
                 "type": "int"
             }
         ],
+    },
+    {
+        "name": "do_math",
+        "description": "Use this function to do math. It will be executed using Python's eval() function.",
+        "parameters": [
+            {
+                "name": "query",
+                "description": "The math expression to solve. It will be executed using Python's eval() function.",
+                "type": "string"
+            }
+        ],
     }
+    # TODO: Add more functions!!!!
+    # TODO: Add a persistent memory recall and save function
 ]
 
 def promptify_functions(functions):
@@ -83,9 +116,35 @@ def promptify_functions(functions):
         ret += _new_addition
     return ret
 
+chat_history = [
+        {# TODO: Add each function's description to the system prompt
+            "role": "system",
+            "content": f"""You are JARVIS, an AI assistant. You are tasked with helping the user with his daily tasks.
+You are an AI similar to JARVIS, so make sure you speak like him. Call the user as \'sir\'.
+Remember that you WILL NOT use your knowledge for non-conversational tasks, because there is a chance you can hallucinate and give the user wrong information. Instead, you will use the functions provided to you to get the information you need before you respond to the user, whenever necessary.
+Here's a list of scenarios where you must use the functions:
+- If the user asks you a question that requires real-world information, use the functions provided to search for the information first. This includes definitions, weather, word meanings, etc.
+- Never respond like 'as an AI, I dont know/cant do that'. Instead, use the functions provided to you to get the information you need before you respond to the user.
+
+As an AI assistant, please select the most suitable function and parameters from the list of available functions below, based on the user's input. Provide your response in JSON format. Only use the functions which are mentioned below.
+{promptify_functions(functions)}
+    """
+        }
+]
+
+# Warm up the LLM
+logger.info("Warming up LLM")
+out = llm.create_chat_completion(chat_history + [{"role": "system", "content": "Say this is a test!"}], stream=True)
+for token in out:
+    try:
+        print(token["choices"][0]["delta"]["content"], end="", flush=True)
+    except KeyError: pass
+print()
+
 available_functions = {
     "get_weather": utils.search_weather,
-    "search_google": utils.search_google
+    "search_google": utils.search_google,
+    "math": lambda params: {"result": eval(params["query"])},
 }
 def evaluate_function(function, params):
     """
@@ -95,6 +154,7 @@ def evaluate_function(function, params):
         return json.dumps(available_functions[function](params))
     else:
         raise NotImplementedError(f"Function {function} not implemented.")
+    
 def add_to_hist(message, chat_history):
     """
     Add a message to the chat history.
@@ -105,7 +165,7 @@ def add_to_hist(message, chat_history):
     })
     chat_history.append({
         "role": "system",
-        "content": "Great! As you can see, the function has returned the output. Please use the chat_with_user function to tell the user the data he wants from the data you got from this function!"
+        "content": "Great! As you can see, the function has returned the output.\nNow, you will take the data you got from this function and respond to the user's query using the chat_with_user function."
     })
     return chat_history
 def generate_reply(llm, chat_history):
@@ -114,11 +174,12 @@ def generate_reply(llm, chat_history):
     t = time.time()
     output = llm.create_chat_completion(chat_history, stream=True)
     logger.info(f"[LLM] < {chat_history[-1]['content']}")
+    _newline = '\n'
     for token in output:
         try:
             delta = token["choices"][0]["delta"]["content"]
             final += delta
-            print(f"Progress: {generated} tokens", end="\r", flush=True)
+            print(f"[Progress: {generated} tokens] {final.replace(_newline, '')}", end="\r", flush=True)
             generated += 1
         except KeyError: pass
     t = time.time() - t
@@ -131,11 +192,14 @@ def generate_reply(llm, chat_history):
     try:
         output = json.loads(final)
         logger.info(f"[LLM] > JSON decoded: {output}")
+        if type(output) != dict:
+            raise TypeError
         if not "function" in output or not "params" in output:
             raise KeyError
         if output["function"] == "chat_with_user":
             logger.info(f"[LLM] > !TO:USER > {output['params']['message']}")
             print(f"A: {output['params']['message']}")
+            # speak(output['params']['message'])
         else:
             try:
                 logger.info(f"[LLM] > !TO:FUNCTION > {output['function']}({output['params']})")
@@ -155,23 +219,24 @@ def generate_reply(llm, chat_history):
         logger.info(f"[LLM] > JSON decode error. Prompting to use JSON only!")
         chat_history.append({
             "role": "system",
-            "content": "That output is not valid JSON. Please try again. Remember to use the chat_with_user function to chat with the user!"
+            "content": "That output is not valid JSON. Please try again."
+        })
+        generate_reply(llm, chat_history)
+    except TypeError:
+        logger.info(f"[LLM] > JSON decode error. Prompting to use JSON only!")
+        chat_history.append({
+            "role": "system",
+            "content": "That output is not valid JSON. Please try again."
         })
         generate_reply(llm, chat_history)
 
 while True:
-    # NOTE: Currently, the bot will forget previous chat history. I'm working on a memory system for this, because I dont want to fill up the context size with chat history.
-    chat_history = [
-        {# TODO: Add each function's description to the system prompt
-            "role": "system",
-            "content": f"""As an AI assistant, please select the most suitable function and parameters from the list of available functions below, based on the user's input. Provide your response in JSON format. Only use the functions which are mentioned below.
-    {promptify_functions(functions)}
-    """
-        }
-    ]
-    user_query = input("Q: ") + " [Remember to respond with JSON function calls only, and use only the functions which are given to you!]"
-    chat_history.append({
-        "role": "user",
-        "content": user_query
-    })
-    generate_reply(llm, chat_history)
+    user_query = input("Q: ")
+    # listen_and_save()
+    # user_query = transcribe_whisper()
+    if user_query and user_query != "":
+        chat_history.append({
+            "role": "user",
+            "content": user_query
+        })
+        generate_reply(llm, chat_history)
