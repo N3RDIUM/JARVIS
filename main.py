@@ -1,11 +1,14 @@
 import g4f
 import json
+import math
 import utils
 from speak import speak
 from speech_recognizer import listen_and_save, transcribe
 
 g4f.logging = False # Disable logging
 g4f.check_version = False # Disable automatic version checking
+
+dev = False
 
 available_functions = [
     {
@@ -45,17 +48,30 @@ available_functions = [
                 "description": "The number of results to return."
             }
         ]
+    },
+    {
+        "name": "calculate",
+        "returns": "number",
+        "arguments": [
+            {
+                "name": "expression",
+                "type": "string",
+                "description": "The expression to evaluate. Note that this will be run in a python shell. You can only use the math module, which is already imported."
+            }
+        ]
     }
 ]
 def speak_and_print(dict_input):
     message = dict_input["message"]
-    speak(message)
+    if not dev:
+        speak(message)
     print(message)
     return None
 function_map = {
     "talk_to_user": speak_and_print,
     "get_weather": utils.search_weather,
     "google_search": utils.search_google,
+    "calculate": lambda arg_dict: eval(arg_dict["expression"]),
 }
 
 messages=[
@@ -87,7 +103,7 @@ def evaluate():
                 messages=messages,
                 temperature=0.1,
                 stream=True,
-                provider=g4f.Provider.FreeGpt,
+                # provider=g4f.Provider.FreeGpt,
             )
             res = ""
             for message in response:
@@ -124,12 +140,15 @@ def evaluate():
     return res
 
 while True:
-    print("listening...")
-    while True:
-        try:
-            msg = transcribe(listen_and_save())
-            if msg != "": break
-        except: print("still listening...")
+    if not dev:
+        print("listening...")
+        while True:
+            try:
+                msg = transcribe(listen_and_save())
+                if msg != "": break
+            except KeyboardInterrupt: exit()
+            except: print("still listening...")
+    else: msg = input("> ")
     messages += [{"role": "user", "content": msg}]
     print("User: "+messages[-1]["content"])
     response = evaluate()
