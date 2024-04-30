@@ -138,5 +138,5 @@ dmypy.json
 # executables
 *.exe
 
-# LocalAI folder
-LocalAI/
+# Quant stuff
+runtime_outs/
