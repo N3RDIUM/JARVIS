@@ -1,2 +1,10 @@
+torch
+torchvision
+torchaudio
+styletts
+faster_whisper
+SpeechRecognition
 ollama
+pyjokes
 chromadb
+playsound
