@@ -3,11 +3,14 @@ import ollama
 import json
 import time
 
-# Model status constants
 # TODO: Move to constants.py
+# Model status constants
 IDLE = 0
 THINKING = 1
 EVALUATING = 2
+
+# Generation constnats
+NOTHING = '{"status": "idle"}'
 
 
 def string_is_json(string: str):
@@ -19,6 +22,15 @@ def string_is_json(string: str):
         return False
     return True
 
+
+SYSTEM_PROMPT = f"""You are a helpful assistant who gives short and concise answers without emojis.
+Always respond with JSON in the following format: {{"message": "your-text-here"}}
+
+You may be called upon even when you don't have anything to do.
+Being the super-intelligent AI you are, you will identify silently whether you have any work to do.
+If you do, you are free to do so in the usual way. Else, if you don't have any work, you may respond
+with {NOTHING} and call it a day.
+"""
 
 # Handling newlines
 # Only consider the first line so thet you don't have
@@ -34,7 +46,7 @@ class ChatModel:
     """
 
     def __init__(self) -> None:
-        self.messages = []
+        self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.model_status = IDLE
         self.thread = threading.Thread(
             target=self.start_thread,
@@ -54,21 +66,36 @@ class ChatModel:
             message = ollama.chat(
                 model="gemma2:2b",  # TODO: Make this configurable using settings.json
                 messages=self.messages,
-            )
+                options={"temperature": 0.0},
+                format="json",
+            )["message"]
             self.model_status = EVALUATING
             self.evaluate_message(message)
             self.model_status = IDLE
 
     def evaluate_message(self, message):
-        if "<|^-^|>" in message["content"]:
+        content = message["content"]
+        print(content)
+
+        if NOTHING in content:
+            print("Waiting...")
             return
-        if not string_is_json(message["content"]):
+
+        if not string_is_json(content):
             self.add_message(message)
             self.add_message(
                 {
                     "role": "system",
                     "content": f"The JSON you provided is invalid. \
-                        Please try again with the corrected JSON synyax \
-                        for the same: {message["content"]}.",
+Please try again with the corrected JSON synyax \
+for the same: {content}.",
                 }
             )
+            return
+
+        self.messages.append({"role": "assistant", "content": content})
+
+
+model = ChatModel()
+while True:
+    model.user_input(input(">"))
