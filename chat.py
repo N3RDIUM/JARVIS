@@ -1,35 +1,46 @@
 import threading
 import ollama
 import json
-import time
-
-# TODO: Move to constants.py
-# Model status constants
-IDLE = 0
-THINKING = 1
-EVALUATING = 2
-
-# Generation constnats
-NOTHING = '{"status": "idle"}'
-
-
-def string_is_json(string: str):
-    try:
-        json.loads(string)
-    except json.JSONDecodeError:
-        return False
-    except ValueError:
-        return False
-    return True
-
+# import time
 
 SYSTEM_PROMPT = f"""You are a super-intelligent AI who gives short and concise answers without emojis.
-Always respond with JSON in the following format: {{"message": "your-text-here"}}
+You never speak in plain text, and interact instead using tool calls. 
+Tools let you do everything, from speaking to the user to retrieving data.
+Here's an example tool call: {r"""{
+    tool_name: "example",
+    args: {
+        foo: "bar",
+    }
+}"""}
+
+The available tools are:
+{r"""[
+    {
+        name: 'idle',
+        description: 'do nothing',
+        args: none
+    },
+    {
+        name: 'chat',
+        description: 'talk to the human',
+        args: {
+            message: {
+                type: 'string',
+                description: 'your search query here'
+            }
+        }
+    },
+    {
+        name: 'time',
+        description: 'get the current time',
+        args: none
+    },
+]"""}
 
 You may be called upon even when you don't have anything to do.
 Being the super-intelligent AI you are, you will identify silently whether you have any work to do.
-If you do, you are free to do so in the usual way. Else, if you don't have any work, you may respond
-with {NOTHING} and call it a day.
+If you do, you are free to do so in the usual way.
+If there is no work to be done, call the 'idle' tool.
 """
 
 # Handling newlines
@@ -46,8 +57,10 @@ class ChatModel:
     """
 
     def __init__(self) -> None:
-        self.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        self.model_status = IDLE
+        self.messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "assistant", "content": "I understand. How may I help you?"},
+        ]
         self.thread = threading.Thread(
             target=self.start_thread,
         )
@@ -61,48 +74,20 @@ class ChatModel:
 
     def start_thread(self):
         while True:
-            time.sleep(1 / 42)  # TODO: Make this configurable using settings.json
-            self.model_status = THINKING
+            # time.sleep(1 / 42)  # TODO: Make this configurable using settings.json
             message = ollama.chat(
                 model="gemma2:2b",  # TODO: Make this configurable using settings.json
                 messages=self.messages,
                 options={"temperature": 0.0},
                 format="json",
             )["message"]
-            self.model_status = EVALUATING
             self.evaluate_message(message)
-            self.model_status = IDLE
 
     def evaluate_message(self, message):
         content = message["content"]
-
-        if NOTHING in content:
-            return
-
-        if not string_is_json(content):
-            self.add_message(message)
-            self.add_message(
-                {
-                    "role": "system",
-                    "content": f"The JSON you provided is invalid. \
-Please try again with the corrected JSON synyax \
-for the same: {content}.",
-                }
-            )
-            return
 
         self.messages.append({"role": "assistant", "content": content})
         print(f"< {content}")
 
     def kill(self):
         self.thread.join()
-
-
-model = ChatModel()
-while True:
-    try:
-        model.user_input(input("> "))
-    except KeyboardInterrupt:
-        print("Interrupted.")
-        model.kill()
-        break
