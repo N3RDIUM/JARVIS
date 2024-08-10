@@ -23,7 +23,7 @@ def string_is_json(string: str):
     return True
 
 
-SYSTEM_PROMPT = f"""You are a helpful assistant who gives short and concise answers without emojis.
+SYSTEM_PROMPT = f"""You are a super-intelligent AI who gives short and concise answers without emojis.
 Always respond with JSON in the following format: {{"message": "your-text-here"}}
 
 You may be called upon even when you don't have anything to do.
@@ -61,7 +61,7 @@ class ChatModel:
 
     def start_thread(self):
         while True:
-            time.sleep(0.42)  # TODO: Make this configurable using settings.json
+            time.sleep(1 / 42)  # TODO: Make this configurable using settings.json
             self.model_status = THINKING
             message = ollama.chat(
                 model="gemma2:2b",  # TODO: Make this configurable using settings.json
@@ -75,10 +75,8 @@ class ChatModel:
 
     def evaluate_message(self, message):
         content = message["content"]
-        print(content)
 
         if NOTHING in content:
-            print("Waiting...")
             return
 
         if not string_is_json(content):
@@ -94,8 +92,17 @@ for the same: {content}.",
             return
 
         self.messages.append({"role": "assistant", "content": content})
+        print(f"< {content}")
+
+    def kill(self):
+        self.thread.join()
 
 
 model = ChatModel()
 while True:
-    model.user_input(input(">"))
+    try:
+        model.user_input(input("> "))
+    except KeyboardInterrupt:
+        print("Interrupted.")
+        model.kill()
+        break

@@ -140,3 +140,6 @@ dmypy.json
 
 # Quant stuff
 runtime_outs/
+
+# Wav files
+*.wav

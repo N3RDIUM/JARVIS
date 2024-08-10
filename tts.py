@@ -1,7 +1,6 @@
 import torch
 from parler_tts import ParlerTTSForConditionalGeneration
 from transformers import AutoTokenizer, set_seed
-from optimum.quanto import quantize, freeze, qint8
 import soundfile as sf
 import time
 
@@ -10,8 +9,6 @@ device = "cpu"
 model = ParlerTTSForConditionalGeneration.from_pretrained(
     "parler-tts/parler-tts-mini-expresso",
 ).to(device)
-quantize(model, weights=qint8, activations=qint8)
-freeze(model)
 
 pipeline = model.generate
 tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler-tts-mini-expresso")
