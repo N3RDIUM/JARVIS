@@ -8,6 +8,7 @@ in pkgs.mkShell {
             python-pkgs.faster-whisper
             python-pkgs.speechrecognition
         ]))
+        pkgs.pyright
     ];
     buildInputs = [ pkgs.libz ];
 }

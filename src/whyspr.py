@@ -1,11 +1,13 @@
-from faster_whisper import WhisperModel
+import os
+import time
+
 import speech_recognition as sr
 import torch
-import time
-import os
+from faster_whisper import WhisperModel
 
 model = WhisperModel("small.en", device="cpu", compute_type="int8")
 pipeline = model.transcribe
+
 
 def recognize_from_mic():
     r = sr.Recognizer()
@@ -35,5 +37,3 @@ def recognize_from_mic():
     os.remove("audio.wav")
 
     return recognized
-
-recognize_from_mic()
