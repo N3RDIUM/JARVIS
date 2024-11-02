@@ -2,10 +2,10 @@ from faster_whisper import WhisperModel
 import speech_recognition as sr
 import torch
 import time
+import os
 
 model = WhisperModel("small.en", device="cpu", compute_type="int8")
 pipeline = model.transcribe
-
 
 def recognize_from_mic():
     r = sr.Recognizer()
@@ -32,8 +32,8 @@ def recognize_from_mic():
 
     print(f"> {recognized}")
     print(f"Took {time.perf_counter() - t} seconds!")
+    os.remove("audio.wav")
 
     return recognized
-
 
 recognize_from_mic()
