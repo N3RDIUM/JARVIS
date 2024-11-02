@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 
@@ -5,8 +6,19 @@ import speech_recognition as sr
 import torch
 from faster_whisper import WhisperModel
 
-model = WhisperModel("small.en", device="cpu", compute_type="int8")
+from logger import logger
+
+MODEL = "small.en"
+logger.log(
+    logging.DEBUG,
+    f"DEBUG [whyspr   ]  Loading model `{MODEL}` for OpenAI Whisper...",
+)
+model = WhisperModel(MODEL, device="cpu", compute_type="int8")
 pipeline = model.transcribe
+logger.log(
+    logging.DEBUG,
+    f"DEBUG [whyspr   ]  Model `{MODEL}` loaded successfully!",
+)
 
 
 def recognize_from_mic():

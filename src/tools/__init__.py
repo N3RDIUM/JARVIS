@@ -7,18 +7,8 @@ from logger import logger
 
 sys.path.append(os.path.dirname(__file__))
 
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "idle",
-            "description": "Call this function if no task is left to be done.",
-        },
-    },
-]
-
-function_map = {"idle": None}
-
+tools = []
+function_map = {}
 BLACKLIST = ["__init__"]
 
 for file in os.listdir(os.path.dirname(__file__)):
