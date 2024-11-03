@@ -1,9 +1,14 @@
 import logging
 
+import inputs
 import tools
-import whyspr
 from logger import logger
 
-logger.log(logging.DEBUG, "DEBUG [main     ]  Nothing.")
+logger.log(logging.DEBUG, "DEBUG [ main      ]  Nothing.")
 
-print(tools, whyspr)
+toolchain = tools.Toolchain()
+input_man = inputs.InputManager()
+
+toolchain.register_tools()
+input_man.register_inputs()
+input_man.begin_streams()
