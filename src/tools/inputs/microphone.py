@@ -55,11 +55,11 @@ def recognize_from_mic():
     t = time.perf_counter()
     with torch.inference_mode():
         segments, info = pipeline("audio.wav", vad_filter=True)
-        logger.log(
-            logging.INFO,
-            "DEBUG [ whyspr    ]  Detected language '%s' with probability %f"
-            % (info.language, info.language_probability),
-        )
+    logger.log(
+        logging.INFO,
+        "DEBUG [ whyspr    ]  Detected language '%s' with probability %f"
+        % (info.language, info.language_probability),
+    )
 
     recognized = ""
     for segment in segments:

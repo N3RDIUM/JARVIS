@@ -16,4 +16,7 @@ tool_export = {
     },
 }
 
-function = print # TODO
+
+def function(args):
+    print(args["message"])
+    return {"role": "assistant", "content": args["message"]}

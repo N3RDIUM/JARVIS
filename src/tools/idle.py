@@ -7,5 +7,5 @@ tool_export = {
 }
 
 
-def function():
+def function(*args, **kwargs):
     pass

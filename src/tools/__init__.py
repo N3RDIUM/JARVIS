@@ -26,3 +26,8 @@ class Toolchain:
                 logging.DEBUG,
                 f"DEBUG [ toolchain ]  Registered tool `{module.tool_export["function"]["name"]}`",
             )
+
+    def eval_call(self, call):
+        name = call["function"]["name"]
+        args = call["function"]["arguments"]
+        return self.function_map[name](args)
